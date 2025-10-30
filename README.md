@@ -225,6 +225,14 @@ Change NodePorts in ```elk-stack.yaml``` to available ports (30000–32767)
 * Auto-provisioned Grafana dashboard
 * Local, reproducible Kubernetes deployment using Terraform
 
+| Component            | Type       | Access                    | Notes                          |
+| -------------------- | ---------- | ------------------------- | ------------------------------ |
+| **Elasticsearch**    | Deployment | ClusterIP (9200 internal) | Stores per-second metrics      |
+| **Logstash**         | Deployment | ClusterIP (5044 internal) | Ingests metrics                |
+| **Kibana**           | Deployment | NodePort 30002            | Explore data                   |
+| **Grafana**          | Deployment | NodePort 30001            | Dashboards/alerts              |
+| **Metric Generator** | Deployment | Internal                  | Sends random metrics every 1s  |
+
 
 ## 🧩 Next Steps
 
