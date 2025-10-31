@@ -8,6 +8,8 @@ This project demonstrates a **per-second metric ingestion and visualization stac
 - Full deployment automated with **Terraform**
 - **Docker Desktop with Kubernetes** on macOS (for local PoC)
 - Auto-provisioned Grafana data source and dashboard
+- Included a Kubernetes service for log stash (type-ClusterIP)
+- Grafana provisioning config so Grafana automatically connects to Elastic Search
 
 The goal is to validate **end-to-end metric flow** and **real-time visualization** using a modern observability stack. A scalability focus will be added, this is purely a working proof of concept.
 
@@ -74,8 +76,8 @@ terraform -version
 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-org/elk-terraform.git
-cd elk-terraform
+git clone https://github.com/your-org/elk-grafana-k8s.git
+cd elk-grafana-k8s
 ```
 2. Initialize Terraform
 
