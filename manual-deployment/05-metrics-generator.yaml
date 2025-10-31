@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: metrics-generator
+  namespace: elk
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: metrics-generator
+  template:
+    metadata:
+      labels:
+        app: metrics-generator
+    spec:
+      containers:
+        - name: metrics-generator
+          image: busybox
+          command: ["/bin/sh", "-c"]
+          args:
+            - >
+              while true; do
+                METRIC=$(shuf -i 1-100 -n 1);
+                TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ");
+                DATA="{\"@timestamp\":\"$TIMESTAMP\",\"metric\":$METRIC}";
+                wget --header="Content-Type: application/json"                      --post-data="$DATA"                      -qO- logstash:8080;
+                echo $DATA;
+                sleep 1;
+              done

@@ -93,7 +93,7 @@ terraform apply -auto-approve
 Terraform will:
 
 * Create namespace elk
-* Apply the full Kubernetes manifest (elk-stack.yaml)
+* Apply the full Kubernetes manifest (full-stack-deployment.yaml)
 * Deploy all components (Elasticsearch, Logstash, Kibana, Grafana, Metrics Generator)
 * Auto-provision the Grafana dashboard
 
@@ -192,12 +192,12 @@ terraform destroy -auto-approve
 
 ```bash
 elk-grafana-k8s/
-├── elk-stack.yaml             # Full Kubernetes manifest
-├── main.tf                    # Terraform apply/destroy logic
-├── variables.tf               # Variable and data lookups
-├── outputs.tf                 # Terraform outputs
-├── README.md                  # This guide
-└── technical_specification.md # Detailed technical design
+├── full-stack-deployment.yaml   # Full Kubernetes manifest
+├── main.tf                      # Terraform apply/destroy logic
+├── variables.tf                 # Variable and data lookups
+├── outputs.tf                   # Terraform outputs
+├── README.md                    # This guide
+└── technical_specification.md   # Detailed technical design
 ```
 
 ## 🧠 Troubleshooting
