@@ -302,6 +302,16 @@ Test connection:
 curl http://localhost:30002/status -I
 ```
 
+Then check:
+```bash
+kubectl get svc -n elk | grep kibana
+```
+
+You should see:
+```nginx
+kibana   NodePort   10.x.x.x   <none>   5601:30002/TCP
+```
+
 ### Access Kibana UI:
 👉 http://localhost:30002
 
@@ -414,6 +424,16 @@ spec:
 Apply:
 ```bash
 kubectl apply -f 04-grafana.yaml
+```
+
+Then check:
+```bash
+kubectl get svc -n elk | grep grafana
+```
+
+You should now see:
+```nginx
+grafana   NodePort   10.x.x.x   <none>   3000:30001/TCP
 ```
 
 ### Access Grafana UI:
