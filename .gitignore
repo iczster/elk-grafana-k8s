@@ -7,3 +7,4 @@
 *.tfbackup
 # Binaries
 terraform-provider-kubernetes.*
+.terraform/.*
