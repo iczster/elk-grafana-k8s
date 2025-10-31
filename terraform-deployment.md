@@ -42,78 +42,40 @@ elk-terraform-k8s/
 ```hcl
 terraform {
   required_providers {
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = "~> 2.27"
+    }
     null = {
       source  = "hashicorp/null"
-      version = "3.3.0"
+      version = "~> 3.2"
     }
   }
-  required_version = ">= 1.0.0"
 }
 
-provider "null" {}
-
-variable "manifest_path" {
-  description = "Path to the combined Kubernetes manifest (full-stack-deployment.yaml). Can be relative to module."
-  type        = string
-  default     = "${path.module}/full-stack-deployment.yaml"
+provider "kubernetes" {
+  config_path = "~/.kube/config"
+  config_context = var.kubectl_context != "" ? var.kubectl_context : null
 }
 
-variable "kubectl_context" {
-  description = "Optional kubectl context to use (if empty, kubectl default context is used)."
-  type        = string
-  default     = ""
-}
-
-# Read the manifest for nicer logging (optional)
-data "local_file" "manifest" {
-  filename = var.manifest_path
-}
-
-# Apply the manifest on create
 resource "null_resource" "apply_manifest" {
-  # changing the file content will force a re-apply
-  triggers = {
-    manifest_sha256 = filesha256(var.manifest_path)
-    kube_context    = var.kubectl_context
+  provisioner "local-exec" {
+    command = <<EOT
+      set -euo pipefail
+      echo "==> Applying Kubernetes manifest: ${local.manifest_path}"
+      if [ -n "${var.kubectl_context}" ]; then
+        kubectl --context="${var.kubectl_context}" apply -f "${local.manifest_path}"
+      else
+        kubectl apply -f "${local.manifest_path}"
+      fi
+    EOT
   }
 
-  provisioner "local-exec" {
-    interpreter = ["bash", "-c"]
-    command     = <<EOT
-set -euo pipefail
-echo "==> Applying Kubernetes manifest: ${var.manifest_path}"
-if [ -n "${var.kubectl_context}" ]; then
-  kubectl --context="${var.kubectl_context}" apply -f "${var.manifest_path}"
-else
-  kubectl apply -f "${var.manifest_path}"
-fi
-EOT
-  }
-
-  # cleanup on destroy
-  provisioner "local-exec" {
-    when        = destroy
-    interpreter = ["bash", "-c"]
-    command     = <<EOT
-set -euo pipefail
-echo "==> Deleting Kubernetes manifest: ${var.manifest_path}"
-if [ -n "${var.kubectl_context}" ]; then
-  kubectl --context="${var.kubectl_context}" delete -f "${var.manifest_path}" --ignore-not-found
-else
-  kubectl delete -f "${var.manifest_path}" --ignore-not-found
-fi
-EOT
-  }
+  # No destroy provisioner — Terraform will not automatically delete manifests
 }
 
-output "manifest_path" {
-  description = "Path to the manifest applied by Terraform"
-  value       = var.manifest_path
-}
-
-output "kubectl_context" {
-  description = "kubectl context used (empty = default)"
-  value       = var.kubectl_context
+output "deployment_status" {
+  value = "Deployment applied using manifest: ${local.manifest_path}"
 }
 ```
 
@@ -125,16 +87,14 @@ output "kubectl_context" {
 ```variables.tf```
 
 ```hcl
-variable "manifest_path" {
-  description = "Path to the combined Kubernetes manifest (full-stack-deployment.yaml)."
-  type        = string
-  default     = "${path.module}/full-stack-deployment.yaml"
-}
-
 variable "kubectl_context" {
-  description = "Optional kubectl context to use (if empty, kubectl default context is used)."
+  description = "Kubernetes context to use (optional)"
   type        = string
   default     = ""
+}
+
+locals {
+  manifest_path = "${path.module}/full-stack-deployment.yaml"
 }
 ```
 
@@ -533,6 +493,8 @@ spec:
 ```bash
 cd elk-terraform-k8s
 terraform init
+terraform validate
+terraform plan
 terraform apply -auto-approve
 ```
 
@@ -550,8 +512,12 @@ Elasticsearch: http://localhost:30200
 
 5. To remove the stack:
 
+```NOTE:``` Destroy provisoner removed to avoid cross platform dependency issues
+
 ```bash
+kubectl delete -f full-stack-deployment.yaml --ignore-not-found
 terraform destroy -auto-approve
+
 ```
 
 That runs kubectl delete -f elk-stack.yaml and removes the namespace objects
