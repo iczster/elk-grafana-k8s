@@ -1,1 +1,9 @@
+# Exclude from repo
 .DS_Store
+# Local Terraform state
+*.tfstate
+*.tfstate.*
+# Backup files created by Terraform
+*.tfbackup
+# Binaries
+terraform-provider-kubernetes.*
