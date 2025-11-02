@@ -13,6 +13,8 @@ This project demonstrates a **per-second metric ingestion and visualization stac
 
 The goal is to validate **end-to-end metric flow** and **real-time visualization** using a modern observability stack. A scalability focus will be added, this is purely a working proof of concept.
 
+```NOTE:``` A breakdown of potential PoC phases are included in ```phases-batch.md``` for reference
+
 ---
 
 ## ⚙️  Architecture
@@ -246,6 +248,7 @@ Change NodePorts in ```elk-stack.yaml``` to available ports (30000–32767)
 * Secure endpoints with basic auth + TLS.
 * Scalability improvements & Testing
 * Backend transient ingest cleanup automation (e.g. 48 hours max, indices maintenance)
+* See ```phases-batch.md``` for further information on future improvements
 
 ```NOTE```
 
