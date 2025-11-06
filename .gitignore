@@ -1,10 +1,23 @@
-# Exclude from repo
-.DS_Store
-# Local Terraform state
+# ---- Terraform ----
+# Local Terraform state files
+terraform.tfstate
+terraform.tfstate.backup
 *.tfstate
-*.tfstate.*
-# Backup files created by Terraform
-*.tfbackup
-# Binaries
-terraform-provider-kubernetes.*
-.terraform/.*
+
+# Terraform working directory & downloaded modules/providers
+.terraform/
+
+# Terraform lock file (regenerated per environment)
+.terraform.lock.hcl
+
+# Crash logs
+crash.log
+*.crash
+
+# Variable files that may contain secrets
+*.tfvars
+*.tfvars.json
+
+# ---- MacOS ----
+.DS_Store
+

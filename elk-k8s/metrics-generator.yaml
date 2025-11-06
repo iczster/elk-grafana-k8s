@@ -1,3 +1,4 @@
+# Metrics Generator 
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -15,26 +16,16 @@ spec:
     spec:
       containers:
       - name: metrics-generator
-        image: python:3.9-slim
-        command: ["sh", "-c"]
-        args:
+        image: curlimages/curl:8.4.0
+        command:
+          - /bin/sh
+          - -c
           - |
-            pip install requests && python - <<'PY'
-            import time, json, random, datetime, requests
-
-            LOGSTASH_URL = "http://logstash:5044"
-
-            while True:
-                doc = {
-                    "timestamp": datetime.datetime.utcnow().isoformat() + "Z",
-                    "metric_name": "cpu_usage",
-                    "value": random.uniform(10.0, 95.0),
-                    "host": "local-mac"
-                }
-                try:
-                    requests.post(LOGSTASH_URL, json=doc, timeout=2)
-                except Exception as e:
-                    print("Error sending metric:", e)
-                time.sleep(1)
-            PY
-
+            while true; do
+              TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ");
+              VALUE=$((RANDOM % 100));
+              curl -s -XPOST http://logstash:5044 \
+                -H "Content-Type: application/json" \
+                -d "{\"@timestamp\":\"$TS\", \"metric\":$VALUE}";
+              sleep 1;
+            done

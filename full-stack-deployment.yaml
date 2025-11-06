@@ -58,7 +58,7 @@ spec:
       targetPort: 9200
       nodePort: 30200
 ---
-# Logstash
+# Logstash Pipeline Config (UPDATED)
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -69,11 +69,8 @@ data:
     input {
       http {
         port => 5044
+        codec => json
       }
-    }
-
-    filter {
-      json { source => "message" }
     }
 
     output {
@@ -84,6 +81,7 @@ data:
       stdout { codec => rubydebug }
     }
 ---
+# Logstash
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -164,14 +162,14 @@ spec:
       targetPort: 5601
       nodePort: 30002
 ---
-# Grafana (with provisioning + dashboard)
+# Grafana Datasource
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: grafana-provisioning
+  name: grafana-datasource
   namespace: elk
 data:
-  datasources.yaml: |
+  datasource.yaml: |
     apiVersion: 1
     datasources:
       - name: Elasticsearch
@@ -181,18 +179,25 @@ data:
         isDefault: true
         jsonData:
           timeField: "@timestamp"
-
-  dashboards.yaml: |
+---
+# Grafana Dashboard Provider
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-provider
+  namespace: elk
+data:
+  dashboard-provider.yaml: |
     apiVersion: 1
     providers:
       - name: 'default'
         folder: ''
         type: file
-        disableDeletion: false
         updateIntervalSeconds: 10
         options:
           path: /var/lib/grafana/dashboards
 ---
+# Grafana Dashboards (unchanged — your dashboard JSON stays intact)
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -203,68 +208,55 @@ data:
     {
       "id": null,
       "uid": "per-second-metrics",
-      "title": "Per Second Metrics",
-      "timezone": "browser",
+      "title": "Real Time CPU Utilisation (per second)",
       "schemaVersion": 36,
-      "version": 1,
+      "version": 2,
       "refresh": "1s",
-      "panels": [
-        {
-          "type": "timeseries",
-          "title": "Live Metrics per Second",
-          "targets": [
-            {
-              "refId": "A",
-              "datasource": {
-                "type": "elasticsearch",
-                "uid": "-100"
-              },
-              "timeField": "@timestamp",
-              "metrics": [
-                { "id": "1", "type": "avg", "field": "metric" }
-              ],
-              "bucketAggs": [
-                {
-                  "type": "date_histogram",
-                  "id": "2",
-                  "field": "@timestamp",
-                  "settings": {
-                    "interval": "1s",
-                    "min_doc_count": 1
-                  }
-                }
-              ]
-            }
-          ],
-          "fieldConfig": {
-            "defaults": {
-              "unit": "none",
-              "color": {
-                "mode": "palette-classic"
-              }
-            },
-            "overrides": []
-          },
-          "options": {
-            "legend": {
-              "displayMode": "table",
-              "placement": "bottom"
-            }
-          },
-          "gridPos": {
-            "h": 12,
-            "w": 24,
-            "x": 0,
-            "y": 0
-          }
-        }
-      ],
       "time": {
         "from": "now-5m",
         "to": "now"
-      }
+      },
+      "panels": [
+        {
+          "type": "timeseries",
+          "title": "Real Time CPU Utilisation",
+          "gridPos": { "x": 0, "y": 0, "w": 24, "h": 8 },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "decimals": 0,
+              "displayName": "CPU (%) Per Second"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": { "type": "elasticsearch", "uid": "Elasticsearch" },
+              "timeField": "@timestamp",
+              "query": "*",
+              "metrics": [
+                {
+                  "id": "1",
+                  "type": "avg",
+                  "field": "metric",
+                  "alias": "Real Time CPU Utilisation"
+                }
+              ],
+              "bucketAggs": [
+                {
+                  "id": "2",
+                  "type": "date_histogram",
+                  "field": "@timestamp",
+                  "settings": { "interval": "1s" }
+                }
+              ]
+            }
+          ]
+        }
+      ]
     }
 ---
+# Grafana
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -291,14 +283,21 @@ spec:
           - name: GF_SECURITY_ADMIN_PASSWORD
             value: admin
         volumeMounts:
-          - name: grafana-provisioning
-            mountPath: /etc/grafana/provisioning
+          - name: grafana-datasource
+            mountPath: /etc/grafana/provisioning/datasources/datasource.yaml
+            subPath: datasource.yaml
+          - name: grafana-dashboard-provider
+            mountPath: /etc/grafana/provisioning/dashboards/dashboard-provider.yaml
+            subPath: dashboard-provider.yaml
           - name: grafana-dashboards
             mountPath: /var/lib/grafana/dashboards
       volumes:
-        - name: grafana-provisioning
+        - name: grafana-datasource
           configMap:
-            name: grafana-provisioning
+            name: grafana-datasource
+        - name: grafana-dashboard-provider
+          configMap:
+            name: grafana-dashboard-provider
         - name: grafana-dashboards
           configMap:
             name: grafana-dashboards
@@ -317,7 +316,7 @@ spec:
       targetPort: 3000
       nodePort: 30001
 ---
-# Metrics generator (per-second)
+# Metrics Generator (UPDATED)
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -335,7 +334,7 @@ spec:
     spec:
       containers:
       - name: metrics-generator
-        image: busybox
+        image: curlimages/curl:8.4.0
         command:
           - /bin/sh
           - -c
@@ -343,9 +342,8 @@ spec:
             while true; do
               TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ");
               VALUE=$((RANDOM % 100));
-              echo "{\"@timestamp\":\"$TS\", \"metric\":$VALUE}" | \
-              wget --header="Content-Type: application/json" \
-                   --post-data=- http://logstash:5044 -O - -q;
+              curl -s -XPOST http://logstash:5044 \
+                -H "Content-Type: application/json" \
+                -d "{\"@timestamp\":\"$TS\", \"metric\":$VALUE}";
               sleep 1;
             done
-# ---------------------------------------------------------

@@ -1,3 +1,4 @@
+# Logstash Pipeline Config
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -8,11 +9,10 @@ data:
     input {
       http {
         port => 5044
+        codec => json
       }
     }
-    filter {
-      json { source => "message" }
-    }
+
     output {
       elasticsearch {
         hosts => ["http://elasticsearch:9200"]
@@ -21,6 +21,7 @@ data:
       stdout { codec => rubydebug }
     }
 ---
+# Logstash
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -42,10 +43,10 @@ spec:
         ports:
           - containerPort: 5044
         volumeMounts:
-          - name: pipeline
+          - name: logstash-pipeline
             mountPath: /usr/share/logstash/pipeline
       volumes:
-        - name: pipeline
+        - name: logstash-pipeline
           configMap:
             name: logstash-pipeline
 ---
@@ -55,10 +56,9 @@ metadata:
   name: logstash
   namespace: elk
 spec:
+  type: ClusterIP
   selector:
     app: logstash
   ports:
     - port: 5044
       targetPort: 5044
-  type: ClusterIP
-
