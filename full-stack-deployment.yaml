@@ -5,7 +5,7 @@ kind: Namespace
 metadata:
   name: elk
 ---
-# Elasticsearch
+# Elasticsearch Deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -23,7 +23,7 @@ spec:
     spec:
       containers:
       - name: elasticsearch
-        image: docker.elastic.co/elasticsearch/elasticsearch:8.14.0
+        image: docker.elastic.co/elasticsearch/elasticsearch:9.2.0
         ports:
           - containerPort: 9200
         env:
@@ -58,7 +58,7 @@ spec:
       targetPort: 9200
       nodePort: 30200
 ---
-# Logstash Pipeline Config (UPDATED)
+# Logstash Pipeline Config 
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -81,7 +81,7 @@ data:
       stdout { codec => rubydebug }
     }
 ---
-# Logstash
+# Logstash Deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -99,7 +99,7 @@ spec:
     spec:
       containers:
       - name: logstash
-        image: docker.elastic.co/logstash/logstash:8.14.0
+        image: docker.elastic.co/logstash/logstash:9.2.0
         ports:
           - containerPort: 5044
         volumeMounts:
@@ -123,7 +123,7 @@ spec:
     - port: 5044
       targetPort: 5044
 ---
-# Kibana
+# Kibana Deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -141,7 +141,7 @@ spec:
     spec:
       containers:
       - name: kibana
-        image: docker.elastic.co/kibana/kibana:8.14.0
+        image: docker.elastic.co/kibana/kibana:9.2.0
         ports:
           - containerPort: 5601
         env:
@@ -162,7 +162,7 @@ spec:
       targetPort: 5601
       nodePort: 30002
 ---
-# Grafana Datasource
+# Grafana Datasource Config
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -180,7 +180,7 @@ data:
         jsonData:
           timeField: "@timestamp"
 ---
-# Grafana Dashboard Provider
+# Grafana Dashboard Config Map
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -197,7 +197,7 @@ data:
         options:
           path: /var/lib/grafana/dashboards
 ---
-# Grafana Dashboards (unchanged — your dashboard JSON stays intact)
+# Grafana Dashboards Provisioning
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -256,7 +256,7 @@ data:
       ]
     }
 ---
-# Grafana
+# Grafana Service Deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -274,7 +274,7 @@ spec:
     spec:
       containers:
       - name: grafana
-        image: grafana/grafana:10.0.0
+        image: grafana/grafana:12.2.1
         ports:
           - containerPort: 3000
         env:
@@ -316,7 +316,7 @@ spec:
       targetPort: 3000
       nodePort: 30001
 ---
-# Metrics Generator (UPDATED)
+# Metrics Generator Deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
